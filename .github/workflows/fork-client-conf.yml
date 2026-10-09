@@ -1,0 +1,21 @@
+name: fork-client-conf
+on: push
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-go@v5
+        with: { go-version: "^1.26" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: main, relative --result_dir (expect failure)
+        run: |
+          git show origin/main:scripts/client-conformance.sh > /tmp/main.sh || git show HEAD~2:scripts/client-conformance.sh > /tmp/main.sh
+          set +e; bash /tmp/main.sh --result_dir ./r-main > main.log 2>&1; echo "exit=$?"; set -e
+          grep -m3 -E "Total|not found|ENOENT" main.log || tail -20 main.log
+      - name: fix, default temp dir
+        run: ./scripts/client-conformance.sh | tail -3
+      - name: fix, relative --result_dir
+        run: ./scripts/client-conformance.sh --result_dir ./r-fix | tail -3 && ls r-fix | head
